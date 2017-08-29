@@ -1,0 +1,88 @@
+---
+title: "DATA607 Assignment_Week1"
+output: html_document
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Loading Data into a Data Frame
+
+### Emrah Akin
+### August 28, 2017
+
+<br>
+```{r }
+columns <- c("Edible", "cap_shape", "cap_surface", "cap_color", "Bruises", 
+             "Odor", "gill_attach", "gill_spacing", "gill_size", "Gill_Color", 
+             "stalk_shape", "stalk_root", "stalk_surface_above", 
+             "stalk_surface_below",  "stalk_color_above", "stalk_color_below", 
+             "veil_type", "veil_color", "ring_number", 
+             "ring_type", "spore_print_color", "population", "habitat")
+```
+
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+require(RCurl)
+require(dplyr)
+```
+<br>
+**Reading the dataset into R:**
+```{r}
+url <- getURL("https://archive.ics.uci.edu/ml/machine-learning-databases/mushroom/agaricus-lepiota.data")
+mushr <- read.csv(text = url, col.names = columns)
+```
+<br>
+**Subsetting the dataset to include 4 variables:**
+```{r}
+mushrSub <- subset(mushr, select = c(1,5,6,10))
+head(mushrSub, 5)
+```
+<br>
+**Displaying the order of the factor levels before changing their name**
+```{r}
+
+summary(mushr$Edible)
+summary(mushr$Gill_Color)
+summary(mushr$Odor)
+summary(mushr$Bruises)
+```
+<br>
+**Re-naming factor levels**
+```{r}
+levels(mushrSub$Edible) <- c("edible", "poisonous")
+levels(mushrSub$Bruises) <- c("no bruise", "bruised")
+levels(mushrSub$Gill_Color) <- c("buff", "red", "gray", "chocolate", "black",
+                                  "brown", "orange", "pink", "green", "purple",
+                                 "white", "yellow")
+levels(mushrSub$Odor) <- c("almond", "creosote","foul","anise", "musty",
+                           "none", "pungent", "spicy", "fishy")
+```
+<br>
+
+**Analyzing data with dplyr package to display efficiency of variables in determining toxicity of a mushroom:**
+```{r}
+mushrSub %>%
+  group_by(Odor) %>%
+  summarise(Toxicity_Rate_by_Odor = sum(Edible == "poisonous") / n(), 
+            Number_of_Mushrooms = n())
+
+# According to the dataset, a mushroom with no odor is poisonous with a probability of about %3.4
+```
+<br>
+```{r}
+mushrSub %>%
+  group_by(Bruises) %>%
+  summarise(Toxicity_Rate_By_Bruises = sum(Edible == "poisonous") / n(),
+            Number_of_Mushrooms = n())
+```
+<br>
+```{r}
+mushrSub %>%
+  group_by(Gill_Color) %>%
+  summarise(Toxicity_Rate_By_Gill_Color = sum(Edible == "poisonous")/n(),
+            Number_of_Mushrooms = n())
+
+# According to the dataset, a mushroom with the gill_color buff is poisonous with a probability of %100
+```
