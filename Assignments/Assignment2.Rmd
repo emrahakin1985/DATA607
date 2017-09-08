@@ -1,0 +1,79 @@
+---
+title: "Assignment2"
+author: "Emrah Akin"
+date: "9/7/2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+require(RMySQL)
+require(lubridate)
+require(reshape)
+require(dplyr)
+
+```
+
+```{r}
+db_movies <- dbConnect(MySQL(), 
+        user = 'data607', password = 'pass', host = 'localhost', dbname = 'Movies')
+```
+
+```{r}
+dbListTables(db_movies)
+```
+
+```{r}
+sql_movies <- "select m.title, m.release_date, c.name, r.rating from movies m join critics c on m.movieid = c.movieid join ratings r on r.ratingid = c.ratingid;"
+movies <- dbGetQuery(db_movies, sql_movies)
+colnames(movies)[3] <- "critic_name"
+movies
+
+# same dataframe can also be read in R from the following github link:
+# url <- "https://raw.githubusercontent.com/emrahakin1985/DATA607/master/datasets/movies.csv"
+# movies <- subset(read.csv(url),,-1)
+```
+
+Pivot operation in R to pivot movie titles into columns so we have a column for each movie title and one row for each critic.
+```{r}
+# using reshape function, cast
+movies_reshaped <- cast(movies, critic_name ~ title, value = 'rating')
+```
+
+```{r}
+knitr::kable(movies_reshaped)
+```
+
+Arranging the order so that movies have the same alphabetical order (before extracting year information) as the reshaped data frame.
+```{r}
+movies <- movies %>%
+  arrange(title)
+
+# using lubridate function, year
+year_vector <- unique(year(movies$release_date))
+year_vector
+```
+
+Formatting vector before using it to change the column names on reshaped dataset
+```{r}
+year_vector <- paste('(', year_vector, ')', sep = "")
+year_vector
+```
+
+
+Adding year information to the columns on movies_reshaped.
+```{r}
+colnames(movies_reshaped)[2:7] <- paste (colnames(movies_reshaped)[2:7], year_vector, sep = " ")
+movies_reshaped
+```
+
+Better looking table with kable
+```{r}
+knitr::kable(movies_reshaped)
+```
+
