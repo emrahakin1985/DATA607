@@ -1,0 +1,84 @@
+---
+title: "607 - Week3 Assignment"
+author: "Emrah Akin"
+date: "9/14/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+library(stringr)
+```
+<br>
+**1- Arranege the vector, "simp" so that all elements conform to the standard first name and last name.**
+```{r}
+simp <- "555-1239Moe Szyslak(636) 555-0113Burns, C. Montgomery555-6542Rev. Timothy Lovejoy555 8904Ned Flanders636-555-3226Simpson, Homer5553642Dr. Julius Hibbert"
+```
+<br>
+Extracting full names
+```{r}
+simpnames_orig <- unlist(str_extract_all(simp, "[[:alpha:]., ]{2,}"))
+simpnames <- simpnames_orig
+simpnames_orig
+```
+<br>
+**Changing the format to first_name  last_name **
+```{r}
+for( i in 1:length(simpnames)){
+  if(str_detect(simpnames[i], ",") == TRUE){
+    simpnames[i] = str_c(str_replace(str_extract(simpnames[i], "(, ).+"), ", ", "")
+                         , " ", str_replace(str_extract(simpnames[i], ".+,"), ",", ""))
+  }else if(str_detect(simpnames[i], "[[:alpha:]]{2,}+\\. ") == T){
+    simpnames[i] = str_replace(simpnames[i], str_extract(simpnames[i], "[[:alpha:]]{2,}+\\. "), "")
+    }
+}
+
+simpnames
+```
+<br>
+**2- Construct a logical vector indicating whther a character has a title (i.e., Rev. and Dr.).**
+
+```{r}
+str_detect(simpnames_orig, "^[[:alpha:]]{2,}+\\. ")
+```
+<br>
+**3. Construct a logical vector indicating whther a character has a second name.**
+```{r}
+str_detect(simpnames_orig, "(^[[:alpha:]]{1}\\.) | [[:alpha:]]{1}\\.")
+str_detect(simpnames, "(^[[:alpha:]]{1}\\.) | [[:alpha:]]{1}\\.")
+```
+<br>
+**4- Describe the types of strings that conform to the following regular expressions and construct an example that is matched by regular expression.**
+<br>
+(a)[0-9]+\\$   At least one digit followed by the dollar sign:
+```{r}
+x <- "$ dollar sign 5$ 1000000$ 1,000$"
+unlist(str_extract_all(x, "[0-9]+\\$"))
+```
+<br>
+(b)\\b[a-z]{1,4}\\b A word with a sequence of at least 1 and at most 4 lowercase letters will be matched.
+```{r}
+w <- "France, fra.nce, one, two, three, fo.ur, fra,nce98, a test"
+unlist(str_extract_all(w, "\\b[a-z]{1,4}\\b"))
+```
+<br>
+(c) .*?\\.txt$ Strings ending with .txt and any characters that come before that in the string, if there is any, will be matched.
+```{r}
+f <- c("test.txt", "test test test$ .txt",   " .txt",   "test.txt.")
+unlist(str_extract_all(f, ".*\\.txt$"))
+```
+<br>
+(d) \\d{2}/\\d{2}/\\d{4}  digits in the following format will be matched: xx/xx/xxxx
+```{r}
+d <- "33/22/1111, 10-11-1991, 7/4/1776, 07/04/1776" 
+unlist(str_extract_all(d, "\\d{2}/\\d{2}/\\d{4}"))
+```
+<br>
+(e) <(.+?)>.+?</\\1>  at least one character in tag and again at least one character in the content area, then the same string with literal "/" in the beginning.
+```{r}
+t <- "test test<test>m</t> <html>test</html>"
+unlist(str_extract_all(t, "<(.+?)>.+?</\\1>"))
+```
+
