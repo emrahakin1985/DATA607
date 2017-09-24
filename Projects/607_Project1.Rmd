@@ -1,0 +1,168 @@
+---
+title: "DATA 607 - Project 1"
+author: "Emrah Akin"
+date: "9/24/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+library(stringr)
+```
+
+#### In this project, you’re given a text file with chess tournament results where the information has some structure. Your job is to create an R Markdown file that generates a .CSV file (that could for example be imported into a SQL database) with the following information for all of the players:
+
+####Player’s Name, Player’s State, Total Number of Points, Player’s Pre-Rating, and Average Pre Chess Rating of Opponents####
+
+<br>
+
+```{r}
+url <- "https://raw.githubusercontent.com/emrahakin1985/DATA607/master/datasets/tournamentinfo.txt"
+chess_x <- read.csv(url, stringsAsFactors = F, skip = 3)
+
+#how regex sees it:
+head(unlist(str_extract_all(chess_x, ".+")), 2)
+
+```
+
+
+```{r}
+chess <- unlist(chess_x)
+chess_reg <- unlist(str_extract_all(chess, ".+"))
+# how regex sees it:
+head(chess_reg, 11)
+```
+
+<br>
+
+**First step is to narrow down, second step is to get the vector with full names only:**
+```{r}
+names_uncln <- unlist(str_extract_all(chess, "\\| +[A-Z]{2,}.+[A-Z]{2,} +\\|?"))
+
+head(names_uncln, 10)
+
+```
+
+<br>
+
+**Second step:**
+```{r}
+names <- unlist(str_extract_all(unlist(names_uncln), "[A-Z].+[A-Z]"))
+head(names, 10)
+```
+
+<br>
+
+**States:**
+```{r}
+state <- unlist(str_extract_all(chess, "^ +[A-Z]{2}"))
+state <- str_trim(state)
+#
+state
+#
+```
+
+<br>
+
+**Points:**
+```{r}
+points <- unlist(str_extract_all(chess, "\\d\\.\\d"))
+#
+points
+#
+```
+
+<br>
+
+**Pre_rates:**
+```{r}
+pre_rate_uncln <- unlist(str_extract_all(chess, "R\\: +\\d{3,4}P?(\\d{2})?"))
+pre_rate_almost_done <- unlist(str_extract_all(unlist(pre_rate_uncln), "\\d.+\\d"))
+pre_rate <- str_replace(unlist(pre_rate_almost_done), "P", ".")
+#
+pre_rate
+#
+```
+
+<br>
+
+**2 step regex code to extract opponent id's:**
+```{r}
+step1 <- "\\|[A-Z] {2,}\\d{1,2}"
+step2 <- "\\d{1,2}"
+```
+
+<br>
+
+**finding the rows where we will extract the data for opponent id's:**
+```{r}
+vector_test <- ""
+for(i in 1:length(chess)){
+  if (str_detect(chess[i], step1) == T){
+    vector_test[i] <- i
+  } 
+}
+vector_test <- vector_test[!is.na(vector_test)]
+vector_test
+```
+
+```{r}
+# creating data frame with established columns
+final_df <- data.frame(names, state, points, pre_rate)
+final_df[1:10,]
+```
+
+<br>
+
+**Extracting and placing opponent id's for each player in a new column:**
+```{r}
+
+k <- 1
+for(i in as.numeric(vector_test)){
+  #print(i)
+  final_df$Opponent_ID[k] <- str_c(unlist(str_extract_all(unlist(unlist(str_extract_all(chess[i], step1))), step2)), collapse = " ")
+  k <- k + 1
+}
+
+final_df[c(1:5,55:59),]
+```
+
+<br>
+
+**First, we need to change the type of pre_rate values (from factors to characters first, then numerical values) to make the calculations.**
+```{r}
+final_df$pre_rate <- as.numeric(as.character(final_df$pre_rate))
+```
+
+<br>
+
+**Matching opponent id and their rate and calculating their average for each row (player):** 
+```{r}
+x <- 0
+
+for( i in 1:nrow(final_df) ) {
+  
+  for ( u in 1:length(unlist(str_split(final_df$Opponent_ID[i], " ")  )  )   ){
+    
+    x <- x + final_df$pre_rate[as.numeric(   unlist(str_split(final_df$Opponent_ID[i], " "))[u]   )]
+    #print(x)
+    
+  }
+  final_df$Average_Opponent_Rate[i] <- x / length(unlist(str_split(final_df$Opponent_ID[i], " ")  )  )
+  #print(x)
+  x<-0
+}
+```
+
+```{r}
+final_df$Average_Opponent_Rate <- round(final_df$Average_Opponent_Rate,0)
+final_df <- subset(final_df,,-5)
+knitr::kable(final_df)
+```
+
+```{r}
+write.csv(final_df, "chess.csv")
+```
