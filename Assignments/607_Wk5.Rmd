@@ -1,0 +1,122 @@
+---
+title: "Data 607 - Assignment Week 5"
+author: "Emrah Akin"
+date: "10/1/2017"
+output: html_document
+---
+
+<br>
+
+**Read the information for airlines from your .CSV file into R, and use tidyr and dplyr as needed to tidy and transform your data. Perform analysis to compare the arrival delays for the two airlines**
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+library(tidyverse)
+library(stringr)
+```
+
+**Reading the data into R:**
+```{r}
+url_fly <- "https://raw.githubusercontent.com/emrahakin1985/DATA607/master/datasets/fly.csv"
+fly <- read.csv(url_fly, stringsAsFactors = F)
+fly
+```
+
+<br>
+
+**Removing the line, filling the column for Airlines:**
+```{r}
+colnames(fly)[1:2] <- c("Airlines", "Arrival")
+fly2 <- fly[c(1,2,4,5),]
+fly2$Airlines <- rep(c("Alaska", "AM WEST"), each = 2 )
+fly2
+```
+
+<br>
+
+**Gathering city columns into rows:**
+```{r}
+fly3 <- fly2 %>%
+  gather(Cities, n, -Airlines, -Arrival)
+fly3
+```
+
+<br>
+
+**Spreading elements in Arrival column into 2 different columns:**
+
+```{r}
+fly4 <- fly3 %>% 
+  spread(Arrival, n)
+fly4
+```
+
+<br>
+
+**Adding Total column to use it for analysis.**
+```{r}
+colnames(fly4)[4] <- "on_time"
+fly5 <- fly4 %>% 
+  mutate(Total = delayed + on_time)
+fly5
+```
+
+<br>
+
+**Delay percentage for each Airline:**
+```{r}
+fly5_compare <- fly5 %>% 
+  group_by(Airlines) %>% 
+  summarise(Delay_Rate = sum(delayed)/ sum(Total))
+
+fly5_compare$Delay_Rate <- str_c(round(fly5_compare$Delay_Rate*100, 1), "%")
+fly5_compare
+```
+
+<br>
+
+**Delay_rate for each airline to the total number of flights.. However number of flights for AM WEST is almost twice as many.**
+```{r}
+fly5_compare2 <- fly5 %>% 
+  group_by(Airlines) %>% 
+  summarise(Number_of_Flights = sum(Total), Delay_Rate = sum(delayed)/ sum(fly5$Total))
+
+fly5_compare2$Delay_Rate <- str_c(round(fly5_compare2$Delay_Rate*100, 1), "%")
+fly5_compare2
+```
+
+<br>
+
+**Adding Delay Rate column:**
+```{r}
+fly6 <- fly5 %>% 
+  mutate(Delay_Rate = delayed / Total)
+
+fly6
+```
+
+<br>
+
+**Spreading Airlines into 2 columnes to get the delay rate for each city.**
+```{r}
+fly7 <- fly6  %>%
+  select(Airlines, Cities, Delay_Rate) %>% 
+  spread(Airlines, Delay_Rate) %>% 
+  select(Cities, "Delay_Rate_Alaska" = Alaska, "Delay_Rate_AM_WEST" = "AM WEST")
+fly7
+```
+
+<br>
+
+**Changing the values in delay rate columns into percantages:**
+```{r}
+fly7[,2:3] = round(fly7[,2:3], 3)
+fly7$Delay_Rate_Alaska <- str_c(fly7$Delay_Rate_Alaska*100, "%")
+fly7$Delay_Rate_AM_WEST <- str_c(fly7$Delay_Rate_AM_WEST*100, "%")
+fly7
+```
+
