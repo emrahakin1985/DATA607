@@ -1,0 +1,111 @@
+---
+title: "DATA 607 Project 2a"
+author: "Emrah Akin"
+date: "10/8/2017"
+output: html_document
+---
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+library(tidyverse)
+library(stringr)
+library(dplyr)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+url_drugs <- "https://raw.githubusercontent.com/fivethirtyeight/data/master/drug-use-by-age/drug-use-by-age.csv"
+drug <- read.csv(url_drugs, stringsAsFactors = F)
+```
+
+<br>
+
+**Renaming some columns to make separating with "." easier:**
+```{r}
+drug2 <- drug %>%
+  rename("pain releiver.use" = pain.releiver.use,
+         "pain releiver.frequency" = pain.releiver.frequency)
+knitr::kable(head(drug2, 10))
+
+```
+
+<br>
+
+**Gathering columns, under key and values:**
+```{r}
+drug_gathered <- suppressWarnings(drug2 %>% 
+  gather(key, value, -age, -n) %>% 
+  arrange(age))
+  
+
+head(drug_gathered, 10)
+```
+
+<br>
+
+**Separating key into subs and variables before spreading variables into 2 columns:**
+```{r}
+drug_gathered2 <- drug_gathered %>% 
+  separate(key, into = c("subs", "variables"), sep = "\\." )
+head(drug_gathered2,10)
+```
+
+<br>
+
+**Spreading variables into use and frequency columns:**
+```{r}
+drug_gathered3 <- drug_gathered2 %>% 
+  spread(variables, value)
+  
+
+knitr::kable(head(drug_gathered3, 15))
+
+```
+
+<br>
+
+**Table  alcohol use:**
+```{r}
+drug_gathered3 <- suppressWarnings(drug_gathered3 %>% 
+  mutate(use = as.numeric(use),
+         frequency = as.numeric(frequency)))
+
+alcohol <- drug_gathered3 %>% 
+  filter(subs=="alcohol") %>% 
+  select(-subs)
+
+head(alcohol)
+
+```
+
+<br>
+
+**Association between age and alcohol usage - frequency and age:**
+```{r}
+ggplot(alcohol) + geom_point(aes(age, y = use), color = "blue") + labs(x = "Age", y = "Median Use")
+ggplot(alcohol) + geom_point(aes(age, y = frequency), color = "red") + labs(x = "Age", y = "Freuency")
+```
+
+<br>
+
+**Table for 16 year old drug users:**
+```{r}
+age_16 <- drug_gathered3 %>% 
+  filter(age == 16 & subs != "alcohol") %>% 
+  select(-age) 
+head(age_16)
+```
+
+<br>
+
+**Bar plot for median drug use:**
+```{r}
+ggplot(age_16, aes(reorder(subs,-use),use), ylim = c(0,50) ) + 
+  geom_bar(stat = "identity", color = "orange", fill = "white") +
+  labs(x = "Median Drug Use", y = "Drugs") +
+  coord_fixed(ratio = .2) +
+  theme(axis.text.x=element_text(angle=90,hjust=1,vjust=0.5))
+```
+
