@@ -1,0 +1,127 @@
+---
+title: "DATA 607 Project 2b"
+author: "Emrah Akin"
+date: "10/8/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+library(tidyverse)
+library(stringr)
+library(dplyr)
+```
+
+
+```{r}
+yoga_url <- "https://raw.githubusercontent.com/emrahakin1985/DATA607/master/datasets/yoga.csv"
+yoga <- read.csv(yoga_url, stringsAsFactors = F)
+
+yoga <- yoga[2:nrow(yoga),]
+
+row.names(yoga) <- 1:nrow(yoga)
+
+colnames(yoga)[1] <- "date"
+knitr::kable(head(yoga, 15))
+```
+
+<br>
+
+**Date column separated into year and month:**
+```{r}
+yoga2 <- yoga %>% 
+  separate(date, into = c("year", "month"), sep = "-")
+  
+head(yoga2 %>% 
+  select(1,2, 3:5), 10)
+
+```
+
+<br>
+
+**Extracting state names:**
+```{r}
+c <- colnames(yoga)
+c
+
+```
+
+<br>
+
+```{r}
+c2 <- unlist(str_extract_all(c, ".+\\.{2}"))
+c2
+```
+
+<br>
+
+```{r}
+c3 <- unlist(str_replace(c2, "\\.\\.", ""))
+c3
+```
+
+<br>
+
+```{r}
+c4 <- unlist(str_replace_all(c3, "\\.", " "))
+c4
+```
+
+<br>
+
+**Adding columns with state names:**
+```{r}
+names(yoga2) <- c(names(yoga2)[1:2], c4)
+```
+
+<br>
+
+**Gathering all state columns:**
+```{r}
+yoga3 <- yoga2 %>% 
+  gather(State, Yoga_Search, -year, -month)
+head(yoga3, 15)
+
+```
+
+<br>
+
+**Yoga searches grouped by states:**
+```{r}
+yoga_search <- yoga3 %>% 
+  group_by(State) %>% 
+  summarise(Yoga_Search = sum(Yoga_Search)) %>% 
+  arrange(desc(Yoga_Search))
+
+#top10
+head(yoga_search, 10)
+
+#bottom10
+tail(yoga_search, 10)
+
+```
+
+<br>
+
+**Yoga search by year. The year 2016 seems to be wrong or incomplete, therefore excluded:**
+```{r}
+yoga_search2 <- yoga3 %>% 
+  group_by(year) %>% 
+  summarise(Yoga_Search = sum(Yoga_Search)) %>% 
+  arrange((year)) %>% 
+  filter(year != 2016)
+yoga_search2
+
+
+```
+
+<br>
+
+Scatter plot showing the association between years and yoga search
+```{r}
+ggplot(yoga_search2, aes(year, Yoga_Search) ) + geom_point(color = "blue")
+```
