@@ -1,0 +1,105 @@
+---
+title: "DATA 607 Project 2c"
+author: "Emrah Akin"
+date: "10/8/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r results='hide', message=FALSE, warning=FALSE, echo=F}
+library(tidyverse)
+library(stringr)
+library(dplyr)
+```
+
+<br>
+
+```{r}
+# pasted from a pdf file - cleaning the data
+grade_url <- "https://raw.githubusercontent.com/emrahakin1985/DATA607/master/datasets/Salary_Increase.csv"
+
+grade <- read.csv(grade_url, stringsAsFactors = F)
+grade
+a <- str_replace_all(unlist(str_extract_all(unlist(grade), ".+")), "\\$", "")
+a
+v <- unlist(str_extract_all(a, "([0-9]){2,3},([0-9]){3}"))
+v
+```
+
+<br>
+
+**Creating the data frame:**
+```{r}
+df <- matrix(v, nrow = 10, ncol = 15)
+df <- data.frame(t(df))
+knitr::kable(df)
+```
+
+<br>
+
+**Adding column names, grade column and reordering the columns.**
+```{r}
+names(df) <- str_c("Step ", 1:10)
+df <- df %>% 
+  mutate(Grade = 1:15) %>% 
+  select(11, 1:10)
+knitr::kable(df)
+  
+```
+
+<br>
+
+**Gathering Step variables:**
+```{r}
+df2 <- suppressWarnings(df %>% 
+  gather("Step", "value", -Grade))
+knitr::kable(head(df2, 30))
+
+```
+
+<br>
+
+**Cleaning and reformatting Step and value (Salary) columns:**
+```{r}
+df3 <- df2 %>% 
+  mutate(
+    Step = str_extract_all(Step, "[0-9]{1,2}"),
+    Step = as.numeric(Step),
+    value = str_replace(value, ",", ""),
+    value = as.numeric(value)
+  ) %>% 
+  rename(Salary = value)
+  
+
+knitr::kable(head(df3,15))
+knitr::kable(tail(df3,15))
+```
+
+<br>
+
+**Calculating mean and st. dev for salary grouped by grades:**
+```{r}
+df3 %>% 
+  group_by(Grade) %>% 
+  summarise("Mean Salary" = mean(Salary), St.dev = sd(Salary))
+```
+
+<br>
+
+**Percentage change in mean salary for each grade (as suggested in the post):**
+```{r}
+
+tbl <- df3 %>% 
+  group_by(Grade) %>% 
+  summarise(Mean_Salary = mean(Salary))
+
+tbl %>% 
+      mutate(pChange = (Mean_Salary - lag(Mean_Salary))/lag(Mean_Salary) * 100)
+```
+
+
+
+
